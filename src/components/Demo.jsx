@@ -2,12 +2,21 @@ import { useState, useEffect } from "react";
 import { copy, linkIcon, loader, tick } from "../assets/index";
 
 const Demo = () => {
+  const [article, setarticle] = useState({
+    url: "",
+    summary: "",
+  });
+
+  const handleSubmit = async (e) => {
+    alert("Submitted");
+  };
+
   return (
     <section className="w-full mt-16 max-w-xl">
       <div className="w-full flex flex-col  gap-2">
         <form
           className="relative flex justify-center items-center"
-          onSubmit={() => {}}
+          onSubmit={handleSubmit}
         >
           <img
             src={linkIcon}
@@ -17,8 +26,8 @@ const Demo = () => {
           <input
             type="url"
             placeholder="Please enter the url"
-            value=""
-            onChange={() => {}}
+            value={article.url}
+            onChange={(e) => setarticle({ ...article, url: e.target.value })}
             required
             className="url_input peer"
           />
