@@ -1,14 +1,41 @@
 import { useState, useEffect } from "react";
 import { copy, linkIcon, loader, tick } from "../assets/index";
+import { useLazyGetSummaryQuery } from "../services/article";
 
 const Demo = () => {
-  const [article, setarticle] = useState({
+  const [article, setArticle] = useState({
     url: "",
     summary: "",
   });
 
+  const [allArticles, setAllArticles] = useState([]);
+
+  const [getSummary, { err, isFetching }] = useLazyGetSummaryQuery();
+
+  useEffect(() => {
+    const articlesFromLocalStorage = JSON.parse(
+      localStorage.getItem("articles")
+    );
+    if (articlesFromLocalStorage) {
+      setAllArticles(articlesFromLocalStorage);
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
-    alert("Submitted");
+    e.preventDefault();
+    const { data } = await getSummary({ articleUrl: article.url });
+
+    if (data?.summary) {
+      const newArticle = { ...article, summary: data.summary };
+      const updateAllArticles = [newArticle, ...allArticles];
+
+      setArticle(newArticle);
+      setAllArticles(updateAllArticles);
+
+      localStorage.setItem("articles", JSON.stringify(updateAllArticles));
+
+      console.log(newArticle);
+    }
   };
 
   return (
@@ -27,7 +54,7 @@ const Demo = () => {
             type="url"
             placeholder="Please enter the url"
             value={article.url}
-            onChange={(e) => setarticle({ ...article, url: e.target.value })}
+            onChange={(e) => setArticle({ ...article, url: e.target.value })}
             required
             className="url_input peer"
           />
@@ -40,32 +67,56 @@ const Demo = () => {
         </form>
         {/* Browse History */}
         <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
-          <div className="link_card">
-            <div className="copy_btn" onClick={() => {}}>
-              <img src="" alt="" className="w-[40%] h-[40%] object-contain" />
+          {allArticles.map((item, index) => (
+            <div
+              key={`link-${index}`}
+              onClick={() => setArticle(item)}
+              className="link_card"
+            >
+              <div className="copy_btn" onClick={() => {}}>
+                <img
+                  src={copy}
+                  alt=""
+                  className="w-[40%] h-[40%] object-contain"
+                />
+              </div>
+              <p className="flex-1 font-satoshi text-blue-700 font-medium text-sm truncate">
+                {item.url}
+              </p>
             </div>
-            <p className="flex-1 font-satoshi text-blue-700 font-medium text-sm truncate">
-              Url
-            </p>
-          </div>
+          ))}
         </div>
 
         {/* Display Results */}
         <div className="my-10 max-w-full flex justify-center items-center">
-          <img src="" alt="loader" className="w-20 h-20 object-contain" />
-          <div className="flex flex-col gap-3">
-            <h2 className="font-satoshi font-bold text-gray-600 text-xl">
-              Article <span className="blue_gradient">Summary</span>
-            </h2>
-            <div className="summary_box">
-              <p className="font-inter font-medium text-sm text-gray-700">
-                Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                Consequuntur doloribus ducimus eaque, enim nemo odio iure
-                cumque, architecto aliquid tenetur reiciendis? Provident aperiam
-                consequatur, dolores at officiis ad cum sit!
-              </p>
-            </div>
-          </div>
+          {isFetching ? (
+            <img
+              src={loader}
+              alt="loader"
+              className="w-20 h-20 object-contain"
+            />
+          ) : err ? (
+            <p className="font-inter font-bold text-black text-center">
+              Well, that wasn't supposed to happen...
+              <br />
+              <span className="font-satoshi font-normal text-gray-700">
+                {err?.data?.err}
+              </span>
+            </p>
+          ) : (
+            article.summary && (
+              <div className="flex flex-col gap-3">
+                <h2 className="font-satoshi font-bold text-gray-600 text-xl">
+                  Article <span className="blue_gradient">Summary</span>
+                </h2>
+                <div className="summary_box">
+                  <p className="font-inter font-medium text-sm text-gray-700">
+                    {article.summary}
+                  </p>
+                </div>
+              </div>
+            )
+          )}
         </div>
       </div>
     </section>
